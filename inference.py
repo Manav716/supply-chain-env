@@ -151,10 +151,29 @@ def get_llm_action(obs: Dict[str, Any], step_num: int, conversation_history: Lis
         return action
 
     except json.JSONDecodeError:
-        # Fallback: noop if LLM returns invalid JSON
         return {"action_type": "noop", "reason": "LLM returned invalid JSON — defaulting to noop"}
     except Exception as e:
-        return {"action_type": "noop", "reason": f"LLM error: {str(e)[:100]}"}
+        err = str(e)
+        if "429" in err:
+            time.sleep(15)
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL_NAME,
+                    messages=[{"role": "system", "content": SYSTEM_PROMPT}] + conversation_history,
+                    temperature=0.2,
+                    max_tokens=512,
+                    timeout=60,
+                )
+                content = response.choices[0].message.content.strip()
+                conversation_history.append({"role": "assistant", "content": content})
+                if content.startswith("```"):
+                    content = content.split("```")[1]
+                    if content.startswith("json"):
+                        content = content[4:]
+                return json.loads(content.strip())
+            except Exception:
+                pass
+        return {"action_type": "noop", "reason": f"LLM error: {err[:100]}"}
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +248,7 @@ def run_task(task_id: str) -> Dict[str, Any]:
         }))
         sys.stdout.flush()
 
+        time.sleep(3)
         obs = new_obs
         if done:
             break
