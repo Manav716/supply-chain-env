@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -108,8 +108,10 @@ def list_tasks():
 
 
 @app.post("/reset", response_model=Observation)
-def reset(req: ResetRequest):
+def reset(req: Optional[ResetRequest] = Body(default=None)):
     global _sim, _current_task_id
+    if req is None:
+        req = ResetRequest()
     try:
         scenario = get_task(req.task_id)
     except ValueError as e:
