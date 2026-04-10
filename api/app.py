@@ -88,7 +88,83 @@ def _require_sim() -> SupplyChainSimulation:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "environment": "supply-chain-disruption-management"}
+    return {"status": "healthy", "environment": "supply-chain-disruption-management"}
+
+
+@app.get("/metadata")
+def metadata():
+    return {
+        "name": "Supply Chain Disruption Management",
+        "description": (
+            "An OpenEnv-compliant reinforcement learning environment where an AI agent "
+            "acts as a supply chain coordinator managing real-world disruptions in real time."
+        ),
+        "version": "1.0.0",
+        "tasks": list(TASKS.keys()),
+    }
+
+
+@app.get("/schema")
+def schema():
+    return {
+        "action": {
+            "type": "object",
+            "properties": {
+                "action_type": {
+                    "type": "string",
+                    "enum": [
+                        "reroute_order", "split_order", "upgrade_shipping",
+                        "hold_order", "cancel_order", "activate_backup_supplier", "noop",
+                    ],
+                },
+                "order_id":   {"type": "string"},
+                "supplier_id": {"type": "string"},
+                "reason":     {"type": "string"},
+            },
+            "required": ["action_type"],
+        },
+        "observation": {
+            "type": "object",
+            "properties": {
+                "step":             {"type": "integer"},
+                "task_id":          {"type": "string"},
+                "budget_remaining": {"type": "number"},
+                "budget_total":     {"type": "number"},
+                "orders":           {"type": "array"},
+                "suppliers":        {"type": "array"},
+                "disruptions":      {"type": "array"},
+                "days_elapsed":     {"type": "integer"},
+            },
+        },
+        "state": {
+            "type": "object",
+            "properties": {
+                "task_id":            {"type": "string"},
+                "score":              {"type": "number"},
+                "steps_taken":        {"type": "integer"},
+                "cumulative_reward":  {"type": "number"},
+                "fulfillment_score":  {"type": "number"},
+                "cost_score":         {"type": "number"},
+                "done":               {"type": "boolean"},
+            },
+        },
+    }
+
+
+@app.post("/mcp")
+def mcp(request: dict = Body(default={})):
+    return {
+        "jsonrpc": "2.0",
+        "id": request.get("id"),
+        "result": {
+            "capabilities": {
+                "reset": True,
+                "step": True,
+                "state": True,
+                "grade": True,
+            }
+        },
+    }
 
 
 @app.get("/tasks")
