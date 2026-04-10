@@ -26,8 +26,8 @@ from openai import OpenAI
 # Configuration — read from environment
 # ---------------------------------------------------------------------------
 
-API_BASE_URL: str = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME:   str = os.environ.get("MODEL_NAME",   "gpt-4o-mini")
+API_BASE_URL: str = os.environ.get("API_BASE_URL", "https://api-inference.huggingface.co/v1")
+MODEL_NAME:   str = os.environ.get("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN:     str = os.environ.get("HF_TOKEN",     os.environ.get("OPENAI_API_KEY", ""))
 
 # The supply-chain environment API base (FastAPI server)

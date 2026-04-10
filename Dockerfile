@@ -32,8 +32,8 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # HF Space env vars — set via HF Secrets
-ENV API_BASE_URL="https://api.openai.com/v1"
-ENV MODEL_NAME="gpt-4o-mini"
+ENV API_BASE_URL="https://api-inference.huggingface.co/v1"
+ENV MODEL_NAME="Qwen/Qwen2.5-72B-Instruct"
 ENV HF_TOKEN=""
 ENV ENV_BASE_URL="http://localhost:7860"
 
