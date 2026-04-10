@@ -182,4 +182,5 @@ baseline:
     task_1_easy: ~0.75
     task_2_medium: ~0.55
     task_3_hard: ~0.35
-  model: gpt-4o-mini
+  model: Qwen/Qwen2.5-72B-Instruct
+  api_base: https://api-inference.huggingface.co/v1
