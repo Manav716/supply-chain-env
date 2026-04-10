@@ -211,14 +211,20 @@ def run_task(task_id: str) -> Dict[str, Any]:
             result = env_step(action)
         except Exception as e:
             print(json.dumps({
-                "event":   "[STEP]",
-                "task_id": task_id,
-                "step":    step_num,
-                "action":  action,
-                "error":   str(e),
-                "reward":  0.0,
-                "cumulative_reward": cumulative_reward,
-                "done":    False,
+                "event":              "[STEP]",
+                "task_id":            task_id,
+                "step":               step_num,
+                "action_type":        action.get("action_type"),
+                "order_id":           action.get("order_id"),
+                "supplier_id":        action.get("supplier_id"),
+                "reason":             str(e)[:120],
+                "step_reward":        0.0,
+                "cumulative_reward":  round(cumulative_reward, 4),
+                "fulfillment_score":  0.0,
+                "cost_score":         0.0,
+                "budget_remaining":   None,
+                "done":               True,
+                "step_time_s":        0.0,
             }))
             sys.stdout.flush()
             break
@@ -309,10 +315,14 @@ def main():
             results.append(result)
         except Exception as e:
             print(json.dumps({
-                "event":   "[END]",
-                "task_id": task_id,
-                "error":   str(e),
-                "final_score": 0.0,
+                "event":             "[END]",
+                "task_id":           task_id,
+                "model":             MODEL_NAME,
+                "total_steps":       0,
+                "final_score":       0.0,
+                "cumulative_reward": 0.0,
+                "breakdown":         {"error": str(e)},
+                "elapsed_seconds":   0.0,
             }))
             sys.stdout.flush()
             results.append({"task_id": task_id, "score": 0.0, "error": str(e)})
