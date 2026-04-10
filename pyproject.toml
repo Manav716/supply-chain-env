@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "supply-chain-env"
+version = "1.0.0"
+description = "Supply Chain Disruption Management — OpenEnv RL Environment"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["reinforcement-learning", "supply-chain", "openenv", "simulation"]
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.30.6",
+    "pydantic==2.8.2",
+    "openai==1.51.0",
+    "requests==2.32.3",
+    "python-multipart==0.0.12",
+    "pyyaml==6.0.2",
+]
+
+[project.scripts]
+supply-chain-env = "api.app:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["env*", "api*"]
+
+[tool.setuptools.package-data]
+"*" = ["openenv.yaml", "README.md"]
