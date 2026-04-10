@@ -254,7 +254,7 @@ def run_task(task_id: str) -> Dict[str, Any]:
         }))
         sys.stdout.flush()
 
-        time.sleep(3)
+        time.sleep(1)
         obs = new_obs
         if done:
             break

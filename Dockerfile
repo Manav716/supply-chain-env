@@ -20,11 +20,14 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # ── Copy project ─────────────────────────────────────────────────────────────
-COPY env/        ./env/
-COPY api/        ./api/
-COPY inference.py .
-COPY openenv.yaml .
-COPY README.md    .
+COPY env/          ./env/
+COPY api/          ./api/
+COPY server/       ./server/
+COPY inference.py  .
+COPY openenv.yaml  .
+COPY README.md     .
+COPY pyproject.toml .
+COPY uv.lock       .
 
 # ── Environment variables (overridable at runtime) ───────────────────────────
 ENV PORT=7860
