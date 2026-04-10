@@ -1,0 +1,185 @@
+name: supply-chain-disruption-management
+version: "1.0.0"
+description: >
+  An OpenEnv-compliant reinforcement learning environment where an AI agent
+  acts as a supply chain coordinator. The agent must manage real-world
+  disruptions — supplier failures, port closures, cascading crises — by
+  rerouting orders, activating backup suppliers, and optimising cost vs.
+  delivery speed across a portfolio of orders.
+
+author: "Supply Chain OpenEnv"
+license: "MIT"
+tags:
+  - openenv
+  - supply-chain
+  - logistics
+  - reinforcement-learning
+  - real-world
+  - decision-making
+
+environment:
+  type: sequential-decision
+  observation_space: structured-json
+  action_space: discrete-typed
+  reward_range: [-1.0, 1.0]
+  episode_types: finite
+
+api:
+  reset:
+    method: POST
+    path: /reset
+    body:
+      task_id:
+        type: string
+        enum: [task_1_easy, task_2_medium, task_3_hard]
+        default: task_1_easy
+    returns: Observation
+
+  step:
+    method: POST
+    path: /step
+    body:
+      action:
+        type: Action
+    returns:
+      observation: Observation
+      reward: Reward
+      done: boolean
+      info: object
+
+  state:
+    method: GET
+    path: /state
+    returns: EpisodeState
+
+  grade:
+    method: POST
+    path: /grade
+    returns:
+      task_id: string
+      score:
+        type: float
+        range: [0.0, 1.0]
+      breakdown: object
+
+models:
+  Observation:
+    fields:
+      step: int
+      task_id: string
+      budget_remaining: float
+      budget_total: float
+      orders: "list[Order]"
+      suppliers: "list[Supplier]"
+      routes: "list[Route]"
+      active_disruptions: "list[Disruption]"
+      days_elapsed: int
+      max_days: int
+      message: string
+
+  Action:
+    fields:
+      action_type:
+        type: string
+        enum:
+          - reroute_order
+          - split_order
+          - upgrade_shipping
+          - hold_order
+          - cancel_order
+          - activate_backup_supplier
+          - noop
+      order_id: "string | null"
+      supplier_id: "string | null"
+      route_id: "string | null"
+      split_quantities: "dict[string, int] | null"
+      reason: "string | null"
+
+  Reward:
+    fields:
+      step_reward: float
+      cumulative_reward: float
+      fulfillment_score: float
+      cost_score: float
+      time_score: float
+      penalty: float
+      done: boolean
+      info: object
+
+tasks:
+  - id: task_1_easy
+    name: "Single Supplier Failure"
+    difficulty: easy
+    max_steps: 15
+    num_orders: 5
+    num_suppliers: 3
+    budget: 50000.0
+    description: >
+      One supplier goes offline. Agent must reroute 5 orders to available
+      backups before deadlines expire. Budget is generous.
+    grader_weights:
+      fulfillment_rate: 0.60
+      priority_score: 0.25
+      budget_efficiency: 0.15
+
+  - id: task_2_medium
+    name: "Port Closure Under Budget Pressure"
+    difficulty: medium
+    max_steps: 20
+    num_orders: 15
+    num_suppliers: 4
+    budget: 85000.0
+    description: >
+      Port of Shanghai closed due to strike. 15 orders must be rerouted
+      with tight budget — not enough to air-freight everything.
+      Agent must prioritise critical orders and find cost-efficient routes.
+    grader_weights:
+      fulfillment_rate: 0.40
+      priority_value_score: 0.30
+      budget_score: 0.20
+      disruption_score: 0.10
+
+  - id: task_3_hard
+    name: "Cascading Triple Disruption"
+    difficulty: hard
+    max_steps: 25
+    num_orders: 30
+    num_suppliers: 8
+    budget: 120000.0
+    description: >
+      Three simultaneous disruptions: typhoon, insolvency, port strike.
+      30 orders, budget insufficient for all — agent must triage by value
+      and priority. VIP (critical) customers incur heavy penalties if failed.
+      Tests multi-constraint optimisation under adversarial conditions.
+    grader_weights:
+      value_score: 0.35
+      critical_score: 0.30
+      cost_efficiency: 0.20
+      triage_score: 0.15
+
+reward:
+  description: >
+    Shaped reward provides signal at every step.
+    Rerouting earns +0.10 to +0.25 based on priority.
+    Deadline adherence adds +0.05 bonus.
+    Cancellations penalise -0.05 to -0.35 by priority.
+    Inaction penalised proportional to pending orders.
+    Budget overrun terminates episode.
+  range: [-1.0, 1.0]
+  sparse: false
+  shaped: true
+
+runtime:
+  max_inference_time_minutes: 20
+  min_vcpu: 2
+  min_memory_gb: 8
+  containerized: true
+  dockerfile: Dockerfile
+
+baseline:
+  script: inference.py
+  expected_scores:
+    task_1_easy: ~0.75
+    task_2_medium: ~0.55
+    task_3_hard: ~0.35
+  model: gpt-4o-mini
