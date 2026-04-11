@@ -42,6 +42,8 @@ MAX_STEPS_PER_TASK: int      = 25   # hard cap — actual task limits are 15/20/
 REQUEST_TIMEOUT:    int      = 30   # seconds per HTTP call to env
 LLM_TIMEOUT:        int      = 60   # seconds per LLM call
 STEP_SLEEP:         float    = 1.0  # rate-limit pause between steps
+MIN_SCORE:          float    = 0.01 # scores must be strictly > 0 — never use 0.0
+MAX_SCORE:          float    = 0.99 # scores must be strictly < 1 — never use 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +116,20 @@ def log_end(
 # ---------------------------------------------------------------------------
 # Environment HTTP helpers
 # ---------------------------------------------------------------------------
+
+def wait_for_env(retries: int = 10, delay: float = 3.0) -> None:
+    """Block until the environment server is healthy or raise after retries."""
+    for attempt in range(retries):
+        try:
+            r = requests.get(f"{ENV_BASE_URL}/health", timeout=5)
+            if r.status_code == 200:
+                return
+        except requests.RequestException:
+            pass
+        print(f"Waiting for env server… attempt {attempt + 1}/{retries}", flush=True)
+        time.sleep(delay)
+    raise RuntimeError(f"Environment server not reachable at {ENV_BASE_URL} after {retries} attempts")
+
 
 def env_reset(task_id: str) -> Dict[str, Any]:
     r = requests.post(
@@ -296,10 +312,10 @@ def run_task(task_id: str) -> Dict[str, Any]:
     # Grade the completed episode
     try:
         grade_result = env_grade()
-        final_score  = grade_result["score"]
+        final_score  = max(MIN_SCORE, min(MAX_SCORE, float(grade_result["score"])))
         breakdown    = grade_result["breakdown"]
     except Exception as e:
-        final_score = 0.0
+        final_score = MIN_SCORE
         breakdown   = {"error": str(e)}
 
     elapsed = round(time.time() - start_time, 2)
@@ -327,6 +343,8 @@ def main() -> None:
     print(f"Env URL:  {ENV_BASE_URL}", flush=True)
     print("=" * 60, flush=True)
 
+    wait_for_env()
+
     results   = []
     total_start = time.time()
 
@@ -338,12 +356,12 @@ def main() -> None:
             log_end(
                 task_id=task_id,
                 step_num=0,
-                final_score=0.0,
+                final_score=MIN_SCORE,
                 cumulative_reward=0.0,
                 breakdown={"error": str(e)},
                 elapsed=0.0,
             )
-            results.append({"task_id": task_id, "score": 0.0, "error": str(e)})
+            results.append({"task_id": task_id, "score": MIN_SCORE, "error": str(e)})
 
         time.sleep(1)
 
