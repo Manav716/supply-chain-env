@@ -297,19 +297,20 @@ class SupplyChainSimulation:
     # ------------------------------------------------------------------
 
     def _compute_final_score(self) -> float:
+        """Compute a score strictly in (0.01, 0.99) — never exactly 0.0 or 1.0."""
         total = len(self.orders)
         if total == 0:
-            return 0.0
+            return 0.01
 
         fulfilled = self._count_status("fulfilled")
         failed = self._count_status("failed")
 
         fulfillment = fulfilled / total
-        cost_efficiency = max(0.0, self.budget_remaining / self.budget_total)
+        cost_efficiency = max(0.0, self.budget_remaining / max(self.budget_total, 1.0))
         failure_penalty = failed / total
 
         score = (fulfillment * 0.6) + (cost_efficiency * 0.25) - (failure_penalty * 0.15)
-        return round(max(0.0, min(1.0, score)), 4)
+        return round(max(0.01, min(0.99, score)), 4)
 
     def _build_reward(self, step_reward: float, msg: str,
                       penalty: float = 0.0, done: bool = False) -> Reward:

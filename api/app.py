@@ -213,7 +213,10 @@ def step(req: StepRequest):
 @app.get("/state", response_model=EpisodeState)
 def state():
     sim = _require_sim()
-    return sim.state()
+    ep = sim.state()
+    # Ensure EpisodeState.score is always strictly in (0.01, 0.99)
+    ep.score = round(max(0.01, min(0.99, float(ep.score))), 4)
+    return ep
 
 
 @app.post("/grade", response_model=GradeResponse)
@@ -221,9 +224,11 @@ def grade_episode():
     sim = _require_sim()
     ep_state = sim.state()
     result = grade(_current_task_id, ep_state)
+    # Enforce strict (0.01, 0.99) — never return exactly 0.0 or 1.0
+    safe_score = round(max(0.01, min(0.99, float(result["score"]))), 4)
     return GradeResponse(
         task_id=_current_task_id,
-        score=result["score"],
+        score=safe_score,
         breakdown=result["breakdown"],
     )
 
